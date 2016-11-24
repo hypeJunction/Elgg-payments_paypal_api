@@ -372,17 +372,27 @@ class Adapter implements GatewayInterface {
 	 */
 	public function updateTransactionStatus(TransactionInterface $transaction) {
 
-		try {
-			if (!$transaction->paypal_sale_id) {
-				if (!$transaction->paypal_payment_id) {
-					return $transaction;
-				}
-				$payment = PayPalPayment::get($transaction->paypal_payment_id, $this->getApiContext());
-				$paypal_transaction = array_shift($payment->getTransactions());
-				/* @var $paypal_transaction PayPalTransaction */
+		if (!$transaction->paypal_payment_id) {
+			return $transaction;
+		}
 
-				$related = array_shift($paypal_transaction->getRelatedResources());
-				$sale = $related->getSale();
+		try {
+			$payment = PayPalPayment::get($transaction->paypal_payment_id, $this->getApiContext());
+			$paypal_transaction = array_shift($payment->getTransactions());
+			/* @var $paypal_transaction PayPalTransaction */
+
+			foreach ($paypal_transaction->getRelatedResources() as $related) {
+				if ($related->getSale()) {
+					$sale = $related->getSale();
+					break;
+				}
+			}
+
+			if (!$sale) {
+				return $transaction;
+			}
+
+			if (!$transaction->paypal_sale_id) {
 				$transaction->paypal_sale_id = $sale->getId();
 				switch ($payment->getPayer()->getPaymentMethod()) {
 					case 'paypal' :
@@ -409,8 +419,6 @@ class Adapter implements GatewayInterface {
 						}
 						break;
 				}
-			} else {
-				$sale = Sale::get($transaction->paypal_sale_id, $this->getApiContext());
 			}
 		} catch (PayPalConnectionException $ex) {
 			register_error(elgg_echo('payments:paypal:api:connection_error'));
@@ -448,27 +456,57 @@ class Adapter implements GatewayInterface {
 							->setDescription(elgg_echo('payments:payment'));
 					$transaction->addPayment($payment);
 					$transaction->setStatus(TransactionInterface::STATUS_PAID);
+
+					$processor_fee = Amount::fromString((string) $sale->getTransactionFee()->getValue(), $sale->getTransactionFee()->getCurrency());
+					$transaction->setProcessorFee($processor_fee);
 				}
 				break;
 
 			case 'refunded' :
-				if ($transaction->status != TransactionInterface::STATUS_REFUNDED) {
+			case 'partially_refunded' :
+
+				if ($sale->getState() == 'refunded') {
+					if ($transaction->status != TransactionInterface::STATUS_REFUNDED) {
+						$transaction->setStatus(TransactionInterface::STATUS_REFUNDED);
+					}
+				} else {
+					if ($transaction->status != TransactionInterface::STATUS_PARTIALLY_REFUNDED) {
+						$transaction->setStatus(TransactionInterface::STATUS_PARTIALLY_REFUNDED);
+					}
+				}
+
+
+				$payments = $transaction->getPayments();
+				$payment_ids = array_map(function($payment) {
+					return $payment->paypal_refund_id;
+				}, $payments);
+
+				foreach ($paypal_transaction->getRelatedResources() as $related) {
+					if (!$related->getRefund()) {
+						continue;
+					}
+
+					$paypal_refund = $related->getRefund();
+
+					if (in_array($paypal_refund->getId(), $payment_ids)) {
+						continue;
+					}
+
+					/**
+					 * @todo: deduct refunded paypal fee from processor fee amount
+					 * Currently, not possible because PP API is dumb
+					 * https://github.com/paypal/PayPal-Ruby-SDK/issues/106#issuecomment-262592048
+					 */
+
 					$refund = new Refund();
-					$refund->setTimeCreated(time())
-							->setAmount(Amount::fromString(-$sale->getAmount()->getTotal(), $sale->getAmount()->getCurrency()))
+					$refund->setTimeCreated(strtotime($paypal_refund->getCreateTime()))
+							->setAmount(Amount::fromString((string) -$paypal_refund->getAmount()->getTotal(), $paypal_refund->getAmount()->getCurrency()))
 							->setPaymentMethod('paypal')
 							->setDescription(elgg_echo('payments:refund'));
+					$refund->paypal_refund_id = $paypal_refund->getId();
 					$transaction->addPayment($refund);
-					$transaction->setStatus(TransactionInterface::STATUS_REFUNDED);
 				}
-				break;
 
-			case 'partially_refunded' :
-				/**
-				 * @todo: figure out how to get the refund amount
-				 * The API is convoluted. Likely, we have to query Payments endpoint
-				 * and add up the refunds in related resources.
-				 */
 				break;
 		}
 
