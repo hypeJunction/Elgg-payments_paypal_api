@@ -19,8 +19,8 @@ See actions/payments/checkout/paypal.php for usage example.
 
 ### Payment Status
 
-You can use 'transaction:<status>', 'payments' hooks to apply additional logic upon payment.
-Note that not all payment are synchronous.
+You can use `'transaction:<status>', 'payments'` hooks to apply additional logic upon payment status changes.
+Note that not all payment are synchronous, e.g. e-Check payments might take a while to clear.
 
 ### Web hook events
 
