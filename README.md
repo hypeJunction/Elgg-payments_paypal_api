@@ -39,6 +39,14 @@ Web hook event data can be digested with `'digest:webhook', 'paypal_api'` plugin
  * You can switch to Live (production) mode in `payments` plugin settings
  * Once you have configured your credentials, setup Webhooks using the buttons in the plugin settings
 
+### Testing
+
+To start making test payments:
+
+ * Go to your dashboard at https://developer.paypal.com
+ * Create a new sandbox account via Sandbox > Accounts > Create account
+ * Use sandbox account credentials during checkout
+
 ### Logs
 
  * Logs are enabled and located in the root of the data directory
