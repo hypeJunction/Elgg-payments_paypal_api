@@ -24,7 +24,7 @@ Note that not all payment are synchronous, e.g. e-Check payments might take a wh
 
 ### Web hook events
 
-Make sure to setup webhook via plugin settings. Web hook event data signature is validated for all requests to `paymens/paypal/api/webhook`
+Make sure to setup webhook via plugin settings. Web hook event data signature is validated for all requests to `payments/paypal/api/webhook`
 Web hook event data can be digested with `'digest:webhook', 'paypal_api'` plugin hook that receives an instance of `\PayPal\API\WebhookEvent` as `$params['webhook_event']`
 
 ### SSL

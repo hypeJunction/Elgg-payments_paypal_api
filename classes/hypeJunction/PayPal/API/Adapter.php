@@ -626,6 +626,7 @@ class Adapter implements GatewayInterface {
 				'log.FileName' => elgg_get_config('dataroot') . 'PayPal.live.log',
 				'log.LogLevel' => 'INFO',
 				'cache.enabled' => true,
+				'cache.FileName' => elgg_get_config('dataroot') . 'paypal/auth.live.cache',
 			]);
 		} else {
 			$client_id = elgg_extract('sandbox_client_id', $settings);
@@ -638,6 +639,7 @@ class Adapter implements GatewayInterface {
 				'log.FileName' => elgg_get_config('dataroot') . 'PayPal.sandbox.log',
 				'log.LogLevel' => 'DEBUG',
 				'cache.enabled' => true,
+				'cache.FileName' => elgg_get_config('dataroot') . 'paypal/auth.test.cache',
 			]);
 		}
 
