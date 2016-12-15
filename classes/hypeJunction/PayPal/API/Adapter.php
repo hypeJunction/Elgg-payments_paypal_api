@@ -109,11 +109,18 @@ class Adapter implements GatewayInterface {
 			$order_items = $order->all();
 			foreach ($order_items as $order_item) {
 				/* @var $order_item OrderItemInterface */
+				if ($order_item->sku) {
+					$sku = $order_item->sku;
+				} else {
+					$mid = (int) $merchant->guid;
+					$iid = (int) $order_item->getId();
+					$sku = "$mid-$iid";
+				}
 				$item = new Item();
-				$item->setName($order_item->getTitle())
+				$item->setName($order_item->getTitle() . " ($sku)")
 						->setCurrency($currency)
 						->setQuantity($order_item->getQuantity())
-						->setSku($order_item->getId())
+						->setSku($sku)
 						->setPrice($order_item->getPrice()->getConvertedAmount());
 				$items[] = $item;
 			}
