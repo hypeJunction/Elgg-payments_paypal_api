@@ -21,7 +21,7 @@ if ($transaction) {
 	], $payee_email);
 
 	$paypal_adapter = new Adapter();
-	$paypal_adapter->setPayeeEmail($email);
+	$paypal_adapter->setPayeeEmail($payee_email);
 	$response = $paypal_adapter->pay($transaction);
 } else {
 	$error = elgg_echo('payments:error:not_found');
