@@ -17,11 +17,11 @@ if ($transaction) {
 		$payee_email = elgg_get_plugin_setting('paypal_email', 'payments_paypal_api');
 	}
 	$payee_email = elgg_trigger_plugin_hook('payee_email', 'paypal', [
-		'transction' => $transaction,
+		'transaction' => $transaction,
 	], $payee_email);
 
 	$paypal_adapter = new Adapter();
-	$paypal_adapter->setPayeeEmail($email);
+	$paypal_adapter->setPayeeEmail($payee_email);
 	$response = $paypal_adapter->pay($transaction);
 } else {
 	$error = elgg_echo('payments:error:not_found');
